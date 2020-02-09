@@ -44,6 +44,7 @@ fs2:
 ls .
 ```
 Usually the pen drive will be on `fs2:`. However, in case it is not, try different numbers instead of `2` and use `ls` to see what files are on there. If none match, reboot by `exit`ing the shell.
+
 10. Once you have access to your pen drive in EFI, ensure eGPU is connected. To flash the eGPU:
 ```sh
 ThorUtil.efi -u <UID> -fs \Firmware.bin -nb -noreset >a debug.log
