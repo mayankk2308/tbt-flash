@@ -15,11 +15,11 @@ Flashing firmware inherently comes with risks and can render your eGFX enclosure
 3. Ensure you have access to a firmware (`.bin`) file for your eGFX enclosure.
 4. Remove the GPU from your enclosure and disconnect any other Thunderbolt devices.
 5. Run the following command in **Terminal** to install:
-   ```
+   ```sh
    curl -qLs $(curl -qLs https://bit.ly/2WtIESm | grep '"browser_download_url":' | cut -d'"' -f4) > tbt-flash.sh; sh tbt-flash.sh; rm tbt-flash.sh
    ```
    If Github is busy, the above command may not work. In that case, please download and execute the script from [Releases](https://github.com/mayankk2308/tbt-flash/releases). This will install the tool on your system. For future use, you only need to type:
-   ```
+   ```sh
    tbt-flash
    ```
 6. Follow instructions exactly as stated in the script.

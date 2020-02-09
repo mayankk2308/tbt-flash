@@ -268,11 +268,57 @@ perform_sys_check() {
   pre_clean_workdir
 }
 
+# ----- Flash eGFX protocols
+
+# Step 1: User acknowledgement
+acknowledge_disclaimer() {
+  printf
+}
+
+# Step 2: Pre-setup instructions
+pre_setup_inst() {
+  printf
+}
+
+# Step 3: Thunderbolt device selection
+select_thunderbolt_device() {
+  printf
+}
+
+# Step 4: Prepare ThorUtil.efi
+prepare_thorutil() {
+  printf
+}
+
+# Step 5: Flash confirmation
+initiate_flash() {
+  printf  
+}
+
+# Step 6: Flash execution
+bless_flash() {
+  printf
+}
+
 # ----- Actions
 
 ### Flash eGFX
 flash_egfx() {
   printfn "Flashing!"
+}
+
+### Check last flash
+last_flash() {
+  printfn "${mark}${gap}${bold}Last Flash Results${normal}\n"
+  result="$(nvram ThorUpdateResult 2>/dev/null | awk '{ print $2 }')"
+  case "${result}" in
+    "")
+    printfn "No flash executed or NVRAM results deleted.";;
+    "%00%00%00%00%00%00%00%00")
+    printfn "Previous flash completed ${bold}without errors${normal} according to NVRAM results.";;
+    *)
+    printfn "Previous flash ${bold}failed${normal} according to NVRAM results.";;
+  esac
 }
 
 ### Uninstall
@@ -295,9 +341,9 @@ donate() {
 
 ### Script menu
 present_menu() {
-  local menu_items=("Flash eGFX" "Uninstall" "Donate" "Quit")
-  local menu_actions=("flash_egfx" "uninstall" "donate" "exit")
-  generate_menu "TBTFlash (${script_ver})" "0" "2" "1" "${menu_items[@]}"
+  local menu_items=("Flash eGFX" "Last Flash Results" "Uninstall" "Donate" "Quit")
+  local menu_actions=("flash_egfx" "last_flash" "uninstall" "donate" "exit")
+  generate_menu "TBTFlash (${script_ver})" "0" "3" "1" "${menu_items[@]}"
   autoprocess_input "What next?" "present_menu" "exit" "true" "${menu_actions[@]}"
 }
 
