@@ -11,6 +11,7 @@ Describe your system configuration here. State any anomalies (USB drives, etc.) 
 - **System GPUs**: Intel Iris & NVIDIA GT 750M, etc.
 - **eGPU**: Sonnet Breakaway 650 + RX Vega 64, etc.
 - **Script Version**: Script version you used.
+- **EFI Logs**: If applicable, please add EFI logs.
 
 ### Issue Description
 Describe your problem. Does it occur every time?

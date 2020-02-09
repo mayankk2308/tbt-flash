@@ -45,15 +45,27 @@ macos_ver="$(sw_vers -productVersion)"
 macos_build="$(sw_vers -buildVersion)"
 
 # Patch references
-# :TODO
+log_base_hex="8B0D2F7F01000FA3F1733D488D4D2048894DE0"
+log_patch_hex="8B0D2F7F01000FA3F19090488D4D2048894DE0"
+
+ace_base_hex="837F2403741C837F280174164889F94C89F24D89F8E80DC1FFFF"
+ace_patch_hex="837F2403741C837F2801EB164889F94C89F24D89F8E80DC1FFFF"
+
+drom_base_hex="4C8B55308A453884C04C89E775230FB74F10410FB75210"
+drom_patch_hex="4C8B55308A453884C04C89E7EB230FB74F10410FB75210"
+
+version_base_hex="4439EB7E6B418A52158A4F15EB74488B1D92050200"
+version_patch_hex="4439EBEB7D418A52158A4F15EB74488B1D92050200"
 
 # ThorUtil.efi access path
 thorutil_loc="/System/Library/AccessoryUpdaterBundles/ThunderboltAccessoryFirmwareUpdater.bundle/Contents/Resources/ThorUtil.efi"
 
+# Firmware binary location
+firmware_loc=""
+
 # Working directory
 workdir="/Library/Application Support/TBTFlash/"
 thorutil_bak="${workdir}ThorUtil.efi"
-thorutil_patched="${workdir}ThorUtilPatched.efi"
 
 # ----- APIs
 
@@ -256,7 +268,8 @@ check_environment() {
 
 ### Pre-clean working directory
 pre_clean_workdir() {
-  rm -rf "${workdir}/*"
+  rm -rf "${workdir}"
+  mkdir -p "${workdir}"
 }
 
 ### Cumulative system check
@@ -285,17 +298,44 @@ select_thunderbolt_device() {
   printf
 }
 
-# Step 4: Prepare ThorUtil.efi
-prepare_thorutil() {
+# Step 4: Request firmware binary
+request_firmware_binary() {
   printf
+  # verify with `file -b == data` command
 }
 
-# Step 5: Flash confirmation
+# Step 5: Prepare ThorUtil.efi
+prepare_thorutil() {
+  printfn "${bold}Preparing EFI patcher...${normal}"
+  rsync -rt "${thorutil_loc}" "${thorutil_bak}"
+  check_bin_patchability "${thorutil_bak}" "${log_base_hex}"
+  local log_patchable=$?
+  check_bin_patchability "${thorutil_bak}" "${ace_base_hex}"
+  local ace_patchable=$?
+  check_bin_patchability "${thorutil_bak}" "${drom_base_hex}"
+  local drom_patchable=$?
+  check_bin_patchability "${thorutil_bak}" "${version_base_hex}"
+  local version_patchable=$?
+  if [[ $(expr ${log_patchable} + ${ace_patchable} + ${drom_patchable} + ${version_patchable}) != 0 ]]; then
+    printfn "Preparation failed. Unable to patch EFI flasher."
+    return -1
+  fi
+  create_hexrepresentation "${thorutil_bak}"
+  patch_binary "${thorutil_bak}" "${log_base_hex}" "${log_patch_hex}"
+  patch_binary "${thorutil_bak}" "${ace_base_hex}" "${ace_patch_hex}"
+  patch_binary "${thorutil_bak}" "${drom_base_hex}" "${drom_patch_hex}"
+  patch_binary "${thorutil_bak}" "${version_base_hex}" "${version_patch_hex}"
+  create_patched_binary "${thorutil_bak}"
+  printfn "Preparations complete."
+  return 0
+}
+
+# Step 6: Flash confirmation
 initiate_flash() {
   printf  
 }
 
-# Step 6: Flash execution
+# Step 7: Flash execution
 bless_flash() {
   printf
 }
@@ -304,7 +344,18 @@ bless_flash() {
 
 ### Flash eGFX
 flash_egfx() {
-  printfn "Flashing!"
+  printfn "${mark}${gap}${bold}Flash eGFX${normal}\n"
+}
+
+### Manual flash for debugging
+debug_flash() {
+  printfn "${mark}${gap}${bold}Debug Flash${normal}\n"
+  printfn "${bold}Generating EFI patcher...${normal}"
+  prepare_thorutil
+  [[ $? != 0 ]] && printfn "Failed to generate EFI patcher." && return
+  rsync -rt "${thorutil_bak}" "/Users/${SUDO_USER}/Desktop/ThorUtil.efi"
+  printfn "${bold}ThorUtil.efi${normal} generated on the Desktop.\n"
+  printfn "Please follow ${bold}README${normal} for debug flash instructions."
 }
 
 ### Check last flash
@@ -315,9 +366,9 @@ last_flash() {
     "")
     printfn "No flash executed or NVRAM results deleted.";;
     "%00%00%00%00%00%00%00%00")
-    printfn "Previous flash completed ${bold}without errors${normal} according to NVRAM results.";;
+    printfn "Previous flash completed ${bold}without errors${normal} per NVRAM results.";;
     *)
-    printfn "Previous flash ${bold}failed${normal} according to NVRAM results.";;
+    printfn "Previous flash ${bold}failed${normal} per NVRAM results.";;
   esac
 }
 
@@ -341,10 +392,10 @@ donate() {
 
 ### Script menu
 present_menu() {
-  local menu_items=("Flash eGFX" "Last Flash Results" "Uninstall" "Donate" "Quit")
-  local menu_actions=("flash_egfx" "last_flash" "uninstall" "donate" "exit")
-  generate_menu "TBTFlash (${script_ver})" "0" "3" "1" "${menu_items[@]}"
-  autoprocess_input "What next?" "present_menu" "exit" "true" "${menu_actions[@]}"
+  local menu_items=("Flash eGFX" "Last Flash Results" "Debug Flash" "Uninstall" "Donate" "Quit")
+  local menu_actions=("flash_egfx" "last_flash" "debug_flash" "uninstall" "donate" "exit")
+  generate_menu "TBTFlash (${script_ver})" "0" "4" "1" "${menu_items[@]}"
+  autoprocess_input "What next?" "perform_sys_check && present_menu" "exit" "true" "${menu_actions[@]}"
 }
 
 
