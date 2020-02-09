@@ -49,6 +49,7 @@ Usually the pen drive will be on `fs2:`. However, in case it is not, try differe
 ThorUtil.efi -u <UID> -fs \Firmware.bin -nb -noreset >a debug.log
 ```
 Use the `UID` you noted in Step 5 and the firmware you placed on the pen drive. Logs will be generated in `debug.log`.
+
 11. Share this log while [filing an issue](https://github.com/mayankk2308/tbt-flash/releases) on this repository.
 
 ## Credits
