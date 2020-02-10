@@ -342,7 +342,7 @@ fetch_thunderbolt_devices() {
 # Step 4: Thunderbolt device selection
 select_thunderbolt_device() {
   fetch_thunderbolt_devices
-  [[ $? != 0 ]] && printfn "No Thunderbolt devices found. Please connect a device." && return -1
+  [[ $? != 0 ]] && printfn "${bold}No Thunderbolt devices found${normal}. Please connect a device." && return -1
   printfn "Choose the Thunderbolt device ${bold}you need to flash${normal}.\nEnsure that you ${bold}choose correctly${normal}.\n"
   device_names+=("Refresh Devices" "Cancel")
   returned_choices=($(seq 0 $((${#device_names[@]} - 1))))
@@ -440,7 +440,7 @@ flash_egfx() {
   [[ $? != 0 ]] && printfn "Provided file missing or is not a firmware binary. Aborting." && return
   printfn "Firmware verified.\n"
   select_thunderbolt_device
-  [[ $? != 0 ]] && printfn "Flashing aborted." && return
+  [[ $? != 0 ]] && return
   prepare_thorutil
   [[ $? != 0 ]] && printfn "Failed to generate EFI patcher." && return
   printfn
