@@ -63,6 +63,9 @@ thorutil_loc="/System/Library/AccessoryUpdaterBundles/ThunderboltAccessoryFirmwa
 # Firmware binary location
 firmware_loc=""
 
+# eGFX target UID
+egfx_target_uid=""
+
 # Working directory
 workdir="/Library/Application Support/TBTFlash/"
 thorutil_bak="${workdir}ThorUtil.efi"
@@ -109,7 +112,6 @@ autoprocess_args() {
     return
   fi
   printfn "Invalid choice."
-  return
 }
 
 ### Generalized input request
@@ -123,7 +125,9 @@ autoprocess_input() {
   (( ${#actions[@]} < 10 )) && readonce="-n1"
   read ${readonce} -p "${bold}${message}${normal} [1-${#actions[@]}]: " userinput
   autoprocess_args "${userinput}" "${caller}" "${actions[@]}"
+  local result=$?
   [[ "${prompt_back}" == true ]] && yesno_action "${bold}Back to menu?${normal}" "${caller}" "${exit_action}"
+  return ${result}
 }
 
 ### Generalized menu generator
@@ -279,29 +283,84 @@ perform_sys_check() {
   check_sip
   elevate_privileges
   pre_clean_workdir
+  egfx_target_uid=""
 }
 
 # ----- Flash eGFX protocols
 
 # Step 1: User acknowledgement
 acknowledge_disclaimer() {
-  printf
+  printfn "Flashing firmware is an inherently ${bold}risky${normal} process.\nYou can permanently brick your device."
+  printfn "\nYou ${bold}must acknowledge the risks involved${normal} and adhere\nto the license before proceeding."
+  yesno_action "${bold}Acknowledge?${normal}" "printfn \"Terms acknowledged.\n\" && return 0" "return -1"
+  return $?
 }
 
 # Step 2: Pre-setup instructions
 pre_setup_inst() {
-  printf
-}
-
-# Step 3: Thunderbolt device selection
-select_thunderbolt_device() {
-  printf
+  printfn "Before moving forward:"
+  printfn "${gap}${bold}1${normal}. Remove GPU from your eGFX enclosure."
+  printfn "${gap}${bold}2${normal}. Ensure you have access to a ${bold}firmware${normal} for your enclosure."
+  printfn "${gap}${bold}3${normal}. All Thunderbolt devices except eGFX are ${bold}physically disconnected${normal}."
+  printfn "${gap}${bold}4${normal}. System will restart to flash firmware. ${bold}Save your work${normal}."
+  printfn "\n${bold}When ready${normal}, please proceed."
+  yesno_action "${bold}Proceed?${normal}" "printfn \"System ready.\n\" && return 0" "return -1"
+  return $?
 }
 
 # Step 4: Request firmware binary
 request_firmware_binary() {
-  printf
-  # verify with `file -b == data` command
+  printfn "Please ${bold}drag and drop${normal} your firmware file to Terminal or\ntype in it's full path. Then press ${bold}ENTER${normal} to continue.\n"
+  read -p "${bold}Firmware File${normal}: " firmware_loc
+  printfn "\n${bold}Verifying firmware file...${normal}"
+  [[ "$(file -b "${firmware_loc}")" != "data" ]] && return -1
+  return 0
+}
+
+# Thunderbolt device accumulator
+fetch_thunderbolt_devices() {
+  local device_data="$(system_profiler SPThunderboltDataType | grep -iE "device name|uid" | grep -iv "UUID" | cut -d ':' -f2 | awk '{$1=$1};1')"
+  local state=1
+  local flag=0
+  device_names=()
+  device_uids=()
+  while IFS= read -r item; do
+    if [[ ${state} == 1 ]]; then
+      state=0
+      flag=0
+      [[ "${item}" == *mac* ]] && flag=1 && continue
+      device_names+=("${item}")
+    else
+      state=1
+      [[ ${flag} == 1 ]] && continue
+      device_uids+=("${item}")
+    fi
+  done <<< "${device_data}"
+  [[ "${#device_uids[@]}" == 0 ]] && return -1 || return 0
+}
+
+# Step 4: Thunderbolt device selection
+select_thunderbolt_device() {
+  fetch_thunderbolt_devices
+  [[ $? != 0 ]] && printfn "No Thunderbolt devices found. Please connect a device." && return -1
+  printfn "Choose the Thunderbolt device ${bold}you need to flash${normal}.\nEnsure that you ${bold}choose correctly${normal}.\n"
+  device_names+=("Refresh Devices" "Cancel")
+  returned_choices=($(seq 0 $((${#device_names[@]} - 1))))
+  for i in ${returned_choices[@]}; do
+    returned_choices[${i}]="return ${returned_choices[${i}]}"
+  done
+  generate_menu "Select Thunderbolt Device" "0" "$((${#device_names[@]} - 2))" "0" "${device_names[@]}"
+  autoprocess_input "Choice" "" "" "false" "${returned_choices[@]}"
+  local selection=$?
+  [[ "${device_names[${selection}]}" == "Cancel" ]] && return -1
+  if [[ "${device_names[${selection}]}" == "Refresh Devices" ]]; then
+     clear && select_thunderbolt_device
+     return $?
+  fi
+  printfn "${bold}Chosen Device${normal}\t${device_names[${selection}]}"
+  printfn "${bold}Device UID${normal}\t${device_uids[${selection}]}"
+  yesno_action "${bold}Proceed?${normal}" "egfx_target_uid=${device_uids[${selection}]} && printfn \"Proceeding.\n\" && return 0" "return -1"
+  return $?
 }
 
 # Step 5: Prepare ThorUtil.efi
@@ -331,13 +390,41 @@ prepare_thorutil() {
 }
 
 # Step 6: Flash confirmation
-initiate_flash() {
-  printf  
+confirm_flash() {
+  printfn "All necessary information collected.\nPlease ${bold}review details${normal} and confirm flash.\n"
+  printfn "${bold}Device UID${normal}\t${egfx_target_uid}"
+  printfn "${bold}Firmware${normal}\t${firmware_loc##*/}\n"
+  printfn "Ensure that your Thunderbolt device ${bold}remains connected and powered${normal}."
+  yesno_action "${bold}Confirm Flash?${normal}" "bless_flash && return 0" "return -1"
+  return $?
+}
+
+# Run clean reboot
+clean_reboot() {
+  osascript -e 'tell application "Finder" to restart' &
+  exit
+}
+
+# Reboot sequence
+initiate_reboot() {
+  local timeout=5
+  while ((${timeout} > -1)); do
+    local key=""
+    read -r -s -n 1 -t 1 key
+    [[ "${key}" == $'\e' ]] && printfc "Restart aborted." && return
+    printf "\033[2K\rRestarting in ${bold}${timeout}s${normal}..."
+    timeout=$((${timeout} - 1))
+  done
+  printf "\033[2K\rRestarting now."
+  clean_reboot
 }
 
 # Step 7: Flash execution
 bless_flash() {
-  printf
+  printfn "${bold}Preparing system for firmware update...${normal}"
+  /usr/sbin/bless --nextonly -mount / -firmware "${thorutil_bak}" -payload "${firmware_loc}" -options "-g -o -u ${egfx_target_uid} -fs efi-apple-payload0-data -nb -noreset"
+  printfn "Preparations complete.\n"
+  initiate_reboot
 }
 
 # ----- Actions
@@ -345,6 +432,17 @@ bless_flash() {
 ### Flash eGFX
 flash_egfx() {
   printfn "${mark}${gap}${bold}Flash eGFX${normal}\n"
+  acknowledge_disclaimer
+  [[ $? != 0 ]] && printfn "Terms not acknowledged. Aborting." && return
+  pre_setup_inst
+  [[ $? != 0 ]] && printfn "System not ready. Aborting." && return
+  request_firmware_binary
+  [[ $? != 0 ]] && printfn "Provided file missing or is not a firmware binary. Aborting." && return
+  printfn "Firmware verified.\n"
+  select_thunderbolt_device
+  [[ $? != 0 ]] && printfn "Flashing aborted." && return
+  confirm_flash
+  [[ $? != 0 ]] && printfn "Flashing aborted." && return
 }
 
 ### Manual flash for debugging
