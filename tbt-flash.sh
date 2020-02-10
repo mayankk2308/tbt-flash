@@ -441,6 +441,9 @@ flash_egfx() {
   printfn "Firmware verified.\n"
   select_thunderbolt_device
   [[ $? != 0 ]] && printfn "Flashing aborted." && return
+  prepare_thorutil
+  [[ $? != 0 ]] && printfn "Failed to generate EFI patcher." && return
+  printfn
   confirm_flash
   [[ $? != 0 ]] && printfn "Flashing aborted." && return
 }
