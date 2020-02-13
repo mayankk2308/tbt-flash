@@ -4,7 +4,7 @@
 # Author(s): Mayank Kumar  (mayankk2308, github.com / mac_editor, egpu.io)
 #            Asutosh Palai (asutoshpalai, github.com)
 # License: Specified in LICENSE.md.
-# Version: 1.0.0
+# Version: 1.0.1
 
 # ----- Environment
 
@@ -32,7 +32,7 @@ is_bin_call=0
 call_script_file=""
 
 # Script version
-script_major_ver="1" && script_minor_ver="0" && script_patch_ver="0"
+script_major_ver="1" && script_minor_ver="0" && script_patch_ver="1"
 script_ver="${script_major_ver}.${script_minor_ver}.${script_patch_ver}"
 latest_script_data=""
 latest_release_dwld=""
@@ -380,7 +380,7 @@ prepare_thorutil() {
     return -1
   fi
   create_hexrepresentation "${thorutil_bak}"
-  patch_binary "${thorutil_bak}" "${log_base_hex}" "${log_patch_hex}"
+  [[ ${1} == '-d' ]] && patch_binary "${thorutil_bak}" "${log_base_hex}" "${log_patch_hex}"
   patch_binary "${thorutil_bak}" "${ace_base_hex}" "${ace_patch_hex}"
   patch_binary "${thorutil_bak}" "${drom_base_hex}" "${drom_patch_hex}"
   patch_binary "${thorutil_bak}" "${version_base_hex}" "${version_patch_hex}"
@@ -452,7 +452,7 @@ flash_egfx() {
 debug_flash() {
   printfn "${mark}${gap}${bold}Debug Flash${normal}\n"
   printfn "${bold}Generating EFI patcher...${normal}"
-  prepare_thorutil
+  prepare_thorutil -d
   [[ $? != 0 ]] && printfn "Failed to generate EFI patcher." && return
   rsync -rt "${thorutil_bak}" "/Users/${SUDO_USER}/Desktop/ThorUtil.efi"
   printfn "${bold}ThorUtil.efi${normal} generated on the Desktop.\n"
