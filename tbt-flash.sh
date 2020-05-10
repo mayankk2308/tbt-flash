@@ -4,7 +4,7 @@
 # Author(s): Mayank Kumar  (mayankk2308, github.com / mac_editor, egpu.io)
 #            Asutosh Palai (asutoshpalai, github.com)
 # License: Specified in LICENSE.md.
-# Version: 1.0.1
+# Version: 1.0.2
 
 # ----- Environment
 
@@ -32,7 +32,7 @@ is_bin_call=0
 call_script_file=""
 
 # Script version
-script_major_ver="1" && script_minor_ver="0" && script_patch_ver="1"
+script_major_ver="1" && script_minor_ver="0" && script_patch_ver="2"
 script_ver="${script_major_ver}.${script_minor_ver}.${script_patch_ver}"
 latest_script_data=""
 latest_release_dwld=""
@@ -56,9 +56,6 @@ drom_patch_hex="4C8B55308A453884C04C89E7EB230FB74F10410FB75210"
 
 version_base_hex="4439EB7E6B418A52158A4F15EB74488B1D92050200"
 version_patch_hex="4439EBEB7D418A52158A4F15EB74488B1D92050200"
-
-# ThorUtil.efi access path
-thorutil_loc="/System/Library/AccessoryUpdaterBundles/ThunderboltAccessoryFirmwareUpdater.bundle/Contents/Resources/ThorUtil.efi"
 
 # Firmware binary location
 firmware_loc=""
@@ -259,9 +256,19 @@ check_sip() {
   fi
 }
 
+### Set ThorUtil.efi location appropriately
+set_thorutil_loc() {
+  if (( ${macos_major_ver} == 15 && ${macos_minor_ver} < 5 )); then
+    thorutil_loc="/System/Library/AccessoryUpdaterBundles/ThunderboltAccessoryFirmwareUpdater.bundle/Contents/Resources/ThorUtil.efi"
+  else
+    thorutil_loc="/System/Library/PrivateFrameworks/MobileAccessoryUpdater.framework/XPCServices/ThunderboltAccessoryUpdaterService.xpc/Contents/Resources/ThorUtil.efi"
+  fi
+}
+
 ### macOS compatibility check
 check_macos_version() {
-  local macos_major_ver="$(printfn "${macos_ver}" | cut -d '.' -f2)"
+  macos_major_ver="$(printfn "${macos_ver}" | cut -d '.' -f2)"
+  macos_minor_ver="$(printfn "${macos_ver}" | cut -d '.' -f3)"
   [[ (${macos_major_ver} < 15) ]] && printfn "\n${bold}macOS 10.15 or later${normal} required.\n" && exit
 }
 
@@ -279,6 +286,7 @@ pre_clean_workdir() {
 ### Cumulative system check
 perform_sys_check() {
   check_macos_version
+  set_thorutil_loc
   check_environment
   check_sip
   elevate_privileges
