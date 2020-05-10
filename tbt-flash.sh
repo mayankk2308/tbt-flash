@@ -430,7 +430,7 @@ initiate_reboot() {
 # Step 7: Flash execution
 bless_flash() {
   printfn "${bold}Preparing system for firmware update...${normal}"
-  /usr/sbin/bless --nextonly -mount / -firmware "${thorutil_bak}" -payload "${firmware_loc}" -options "-g -o -u ${egfx_target_uid} -fs efi-apple-payload0-data -nb -noreset"
+  /usr/sbin/bless --nextonly -mount / -firmware "${thorutil_bak}" -payload "${firmware_loc}" -options "-g -o -u ${egfx_target_uid} -fs efi-apple-payload0-data -nb -noreset" 2>/dev/null 1>&2
   printfn "Preparations complete.\n"
   initiate_reboot
 }
