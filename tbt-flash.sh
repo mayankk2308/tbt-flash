@@ -4,7 +4,7 @@
 # Author(s): Mayank Kumar  (mayankk2308, github.com / mac_editor, egpu.io)
 #            Asutosh Palai (asutoshpalai, github.com)
 # License: Specified in LICENSE.md.
-# Version: 1.0.2
+# Version: 1.0.3
 
 # ----- Environment
 
@@ -32,7 +32,7 @@ is_bin_call=0
 call_script_file=""
 
 # Script version
-script_major_ver="1" && script_minor_ver="0" && script_patch_ver="2"
+script_major_ver="1" && script_minor_ver="0" && script_patch_ver="3"
 script_ver="${script_major_ver}.${script_minor_ver}.${script_patch_ver}"
 latest_script_data=""
 latest_release_dwld=""
@@ -510,8 +510,8 @@ present_menu() {
 
 begin() {
   validate_caller
-  perform_sys_check
   fetch_latest_release
+  perform_sys_check
   first_time_setup
   present_menu
 }
