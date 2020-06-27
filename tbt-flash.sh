@@ -4,7 +4,7 @@
 # Author(s): Mayank Kumar  (mayankk2308, github.com / mac_editor, egpu.io)
 #            Asutosh Palai (asutoshpalai, github.com)
 # License: Specified in LICENSE.md.
-# Version: 1.0.3
+# Version: 1.0.4
 
 # ----- Environment
 
@@ -32,7 +32,7 @@ is_bin_call=0
 call_script_file=""
 
 # Script version
-script_major_ver="1" && script_minor_ver="0" && script_patch_ver="3"
+script_major_ver="1" && script_minor_ver="0" && script_patch_ver="4"
 script_ver="${script_major_ver}.${script_minor_ver}.${script_patch_ver}"
 latest_script_data=""
 latest_release_dwld=""
@@ -258,7 +258,7 @@ check_sip() {
 
 ### Set ThorUtil.efi location appropriately
 set_thorutil_loc() {
-  if (( ${macos_major_ver} == 15 && ${macos_minor_ver} < 5 )); then
+  if (( ${macos_leap_ver} == 10 && ${macos_major_ver} == 15 && ${macos_minor_ver} < 5 )); then
     thorutil_loc="/System/Library/AccessoryUpdaterBundles/ThunderboltAccessoryFirmwareUpdater.bundle/Contents/Resources/ThorUtil.efi"
   else
     thorutil_loc="/System/Library/PrivateFrameworks/MobileAccessoryUpdater.framework/XPCServices/ThunderboltAccessoryUpdaterService.xpc/Contents/Resources/ThorUtil.efi"
@@ -267,8 +267,10 @@ set_thorutil_loc() {
 
 ### macOS compatibility check
 check_macos_version() {
+  macos_leap_ver="$(printfn "${macos_ver}" | cut -d '.' -f1)"
   macos_major_ver="$(printfn "${macos_ver}" | cut -d '.' -f2)"
   macos_minor_ver="$(printfn "${macos_ver}" | cut -d '.' -f3)"
+  [[ -z "${macos_minor_ver}" ]] && macos_minor_ver=0
   [[ (${macos_major_ver} < 15) ]] && printfn "\n${bold}macOS 10.15 or later${normal} required.\n" && exit
 }
 
@@ -494,7 +496,7 @@ uninstall() {
 ### Donations
 donate() {
   open "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=mayankk2308@icloud.com&lc=US&item_name=Development%20of%20TBTFlash&no_note=0&currency_code=USD&bn=PP-DonationsBF:btn_donate_SM.gif:NonHostedGuest"
-  printfn "See your ${bold}web browser${normal}."  
+  printfn "See your ${bold}web browser${normal}."
 }
 
 # ----- User Interface
@@ -516,5 +518,4 @@ begin() {
   present_menu
 }
 
-begin
-)
+begin)
