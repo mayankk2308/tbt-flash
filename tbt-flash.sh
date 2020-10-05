@@ -4,7 +4,7 @@
 # Author(s): Mayank Kumar  (mayankk2308, github.com / mac_editor, egpu.io)
 #            Asutosh Palai (asutoshpalai, github.com)
 # License: Specified in LICENSE.md.
-# Version: 1.0.4
+# Version: 1.0.5
 
 # ----- Environment
 
@@ -32,7 +32,7 @@ is_bin_call=0
 call_script_file=""
 
 # Script version
-script_major_ver="1" && script_minor_ver="0" && script_patch_ver="4"
+script_major_ver="1" && script_minor_ver="0" && script_patch_ver="5"
 script_ver="${script_major_ver}.${script_minor_ver}.${script_patch_ver}"
 latest_script_data=""
 latest_release_dwld=""
@@ -271,7 +271,7 @@ check_macos_version() {
   macos_major_ver="$(printfn "${macos_ver}" | cut -d '.' -f2)"
   macos_minor_ver="$(printfn "${macos_ver}" | cut -d '.' -f3)"
   [[ -z "${macos_minor_ver}" ]] && macos_minor_ver=0
-  [[ (${macos_major_ver} < 15) ]] && printfn "\n${bold}macOS 10.15 or later${normal} required.\n" && exit
+  [[ ${macos_leap_ver} == "10" && (${macos_major_ver} < 15) ]] && printfn "\n${bold}macOS 10.15 or later${normal} required.\n" && exit
 }
 
 ### Ensure presence of ThorUtil.efi
